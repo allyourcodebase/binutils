@@ -109,7 +109,7 @@ pub fn build(b: *std.Build) void {
         .HAVE_DECL_STRVERSCMP = if (target.result.os.tag == .linux or target.result.os.tag == .wasi) true else false,
         .HAVE_DECL_VASPRINTF = true,
         .HAVE_DECL_VSNPRINTF = true,
-        .HAVE_DUP3 = if (target.result.isMuslLibC() or (target.result.isGnuLibC() and target.result.os.isAtLeast(.linux, .{ .major = 2, .minor = 9, .patch = 0 }) orelse false)) true else null,
+        .HAVE_DUP3 = if (target.result.isMuslLibC() or (target.result.isGnuLibC() and target.result.os.version_range.linux.glibc.order(.{ .major = 2, .minor = 9, .patch = 0 }) != .lt)) true else null,
         .HAVE_FCNTL_H = true,
         .HAVE_FFS = true,
         .HAVE_FORK = if (target.result.os.tag != .windows and target.result.os.tag != .wasi) true else null,
@@ -136,7 +136,7 @@ pub fn build(b: *std.Build) void {
         .HAVE_MEMSET = true,
         .HAVE_MKSTEMPS = switch (target.result.os.tag) {
             .windows, .wasi => null,
-            .linux => if (target.result.abi.isMusl() or (target.result.abi.isGnu() and target.result.os.isAtLeast(.linux, .{ .major = 2, .minor = 11, .patch = 0 }) orelse false)) true else null,
+            .linux => if (target.result.abi.isMusl() or (target.result.abi.isGnu() and target.result.os.version_range.linux.glibc.order(.{ .major = 2, .minor = 11, .patch = 0 }) != .lt)) true else null,
             else => true,
         },
         .HAVE_MMAP = if (target.result.os.tag == .linux) true else null,
