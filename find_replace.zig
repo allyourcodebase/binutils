@@ -2,11 +2,15 @@
 
 const std = @import("std");
 
-pub fn main(init: std.process.Init) !void {
-    const gpa = init.gpa;
-    const io = init.io;
-    const cwd = std.Io.Dir.cwd();
-    const args = try init.minimal.args.toSlice(init.arena.allocator());
+pub fn main(init: std.process.Init.Minimal) !void {
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const io = threaded.io();
+
+    var arena_allocator: std.heap.ArenaAllocator = .init(std.heap.page_allocator);
+    defer arena_allocator.deinit();
+    const arena = arena_allocator.allocator();
+
+    const args = try init.args.toSlice(arena);
 
     if (args.len != 5) {
         std.debug.print("usage: {s} <input_file> <output_file> <before> <after>\n", .{args[0]});
@@ -18,13 +22,10 @@ pub fn main(init: std.process.Init) !void {
     const before = args[3];
     const after = args[4];
 
-    const input = try cwd.readFileAlloc(io, input_filename, gpa, .limited(std.math.maxInt(u32)));
-    defer gpa.free(input);
+    const input = try std.Io.Dir.cwd().readFileAlloc(io, input_filename, arena, .unlimited);
+    const output = try std.mem.replaceOwned(u8, arena, input, before, after);
 
-    const output = try std.mem.replaceOwned(u8, gpa, input, before, after);
-    defer gpa.free(output);
-
-    try cwd.writeFile(io, .{
+    try std.Io.Dir.cwd().writeFile(io, .{
         .sub_path = output_filename,
         .data = output,
     });

@@ -725,7 +725,7 @@ pub fn build(b: *std.Build) void {
     bfd.installHeader(upstream.path("include/diagnostics.h"), "diagnostics.h");
     bfd.root_module.addConfigHeader(libbfd_config_header);
     bfd.root_module.addCMacro("HAVE_CONFIG_H", "1");
-    bfd.root_module.addCMacro("DEBUGDIR", b.fmt("\"{s}\"", .{b.pathJoin(&.{ b.install_prefix, "lib", "debug" })}));
+    bfd.root_module.addCMacro("DEBUGDIR", "\"/lib/debug\"");
     bfd.root_module.linkLibrary(iberty);
     bfd.root_module.linkLibrary(libsframe);
     bfd.root_module.addIncludePath(upstream.path("bfd"));
@@ -736,8 +736,8 @@ pub fn build(b: *std.Build) void {
     if (enable_plugins) {
         bfd.installHeader(upstream.path("include/plugin-api.h"), "plugin-api.h");
         bfd.root_module.addCSourceFile(.{ .file = upstream.path("bfd/plugin.c") });
-        bfd.root_module.addCMacro("LIBDIR", b.fmt("\"{s}\"", .{b.lib_dir}));
-        bfd.root_module.addCMacro("BINDIR", b.fmt("\"{s}\"", .{b.exe_dir}));
+        // bfd.root_module.addCMacro("LIBDIR", b.fmt("\"{s}\"", .{b.lib_dir}));
+        // bfd.root_module.addCMacro("BINDIR", b.fmt("\"{s}\"", .{b.exe_dir}));
     }
     bfd.root_module.addCSourceFiles(.{
         .root = upstream.path("bfd"),
@@ -894,6 +894,7 @@ pub fn build(b: *std.Build) void {
         .root_module = b.createModule(.{
             .root_source_file = b.path("find_replace.zig"),
             .target = b.graph.host,
+            .single_threaded = true,
         }),
     });
 
@@ -928,7 +929,7 @@ pub fn build(b: *std.Build) void {
 
     for (std.mem.concat(b.allocator, []const u8, &.{ &.{default_vector}, select_vectors }) catch @panic("OOM")) |target_vector| {
         const files = select_vector_sources.get(target_vector) orelse std.debug.panic("missing sources for '{s}'", .{target_vector});
-        var files_without_generated = std.ArrayListUnmanaged([]const u8).initCapacity(b.allocator, files.len) catch @panic("OOM");
+        var files_without_generated = std.ArrayList([]const u8).initCapacity(b.allocator, files.len) catch @panic("OOM");
 
         for (files) |file| {
             if (generated_sources.get(file)) |generated_file| {
@@ -1044,7 +1045,7 @@ pub fn build(b: *std.Build) void {
         .files = &.{ "dis-buf.c", "dis-init.c" },
     });
 
-    var opcodes_arch_defines: std.ArrayListUnmanaged([]const u8) = .empty;
+    var opcodes_arch_defines: std.ArrayList([]const u8) = .empty;
 
     for (select_architectures) |select_architecture| {
         var arch_define = select_architecture;
